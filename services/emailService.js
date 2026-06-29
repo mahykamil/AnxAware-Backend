@@ -23,6 +23,9 @@ class EmailService {
         const port = parseInt(process.env.SMTP_PORT || '587', 10);
         const user = process.env.SMTP_USER;
         const pass = process.env.SMTP_PASS;
+         console.log("SMTP_HOST:", host);
+    console.log("SMTP_PORT:", port);
+    console.log("SMTP_USER:", user);
 
         if (!host || !user || !pass) {
             console.warn('⚠️ Email: SMTP not fully configured');
