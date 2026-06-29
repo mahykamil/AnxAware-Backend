@@ -1,6 +1,7 @@
 const EmergencyLog = require('../models/EmergencyLog');
 const emergencyAlertService = require('../services/emergencyAlertService');
 
+// javascript may TRy and catch method use hotay meanse ham pahaly vaariable abnaatay uskay baddd database kay aander jo variable crearte kiay hoay unkay bolatay on in case function nahi [erform hoay matlub catch a error karatayy ]
 // ─────────────────────────────────────────────────────────────
 //  POST /api/emergency/send-alert
 //
@@ -14,7 +15,8 @@ const emergencyAlertService = require('../services/emergencyAlertService');
 //  }
 // ─────────────────────────────────────────────────────────────
 
-exports.sendAlert = async (req, res) => {
+exports.sendAlert = async (req, res) => { 
+    // yahan par once anxiety triggr ho to phir allert jay ghi 
     try {
         const userId = req.user._id;
         const { location, triggerReason, heartRate, temperature, anxietyLevel } = req.body;

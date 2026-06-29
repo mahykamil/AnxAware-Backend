@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+// emergency controller may jitnay variable thay woh yahan apar mojood hai yeah aisi file hoti ... model kay folder may sari files aisi hoti jo kay databbae may data store karaany aky liya use hooti
 const emergencyLogSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,

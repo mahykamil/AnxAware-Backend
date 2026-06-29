@@ -1,16 +1,23 @@
 const nodemailer = require('nodemailer');
 
 /**
- * Email delivery via Nodemailer (SMTP).
- * Configure with SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM in .env
+ * Email delivery via Nodemailer (SMTP)
+ * Configure with:
+ * SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM
  */
+
 class EmailService {
     constructor() {
         this.from = process.env.EMAIL_FROM || 'AnxAware Alerts <alerts@anxaware.app>';
         this.transporter = null;
+
+        // ✅ FIX: correct function call
         this._init();
     }
 
+    /**
+     * Initialize SMTP transporter
+     */
     _init() {
         const host = process.env.SMTP_HOST;
         const port = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -18,15 +25,28 @@ class EmailService {
         const pass = process.env.SMTP_PASS;
 
         if (!host || !user || !pass) {
-            console.warn('⚠️  Email: SMTP not fully configured (SMTP_HOST, SMTP_USER, SMTP_PASS required)');
+            console.warn('⚠️ Email: SMTP not fully configured');
             return;
         }
 
         this.transporter = nodemailer.createTransport({
             host,
             port,
-            secure: process.env.SMTP_SECURE === 'true' || port === 465,
-            auth: { user, pass },
+            secure: port === 465, // true for 465, false for 587
+            auth: {
+                user,
+                pass,
+            },
+
+            // 🔥 prevents Railway / network TLS issues
+            tls: {
+                rejectUnauthorized: false,
+            },
+
+            // 🔥 prevent hanging connections
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
         });
 
         console.log('──────────────────────────────────────');
@@ -37,33 +57,44 @@ class EmailService {
         console.log('──────────────────────────────────────');
     }
 
+    /**
+     * Check if SMTP is configured
+     */
     isConfigured() {
         return !!this.transporter;
     }
 
+    /**
+     * Verify SMTP connection
+     */
     async verifyConnection() {
         if (!this.transporter) {
             return { valid: false, error: 'SMTP not configured' };
         }
+
         try {
             await this.transporter.verify();
             return { valid: true };
         } catch (error) {
-            return { valid: false, error: error.message };
-        }
+    console.error("SMTP ERROR:", error);
+
+    return {
+        valid: false,
+        error: error.message,
+        code: error.code,
+        command: error.command,
+    };
+}
     }
 
     /**
-     * @param {string} to - Recipient email
-     * @param {string} subject
-     * @param {string} text - Plain text body
-     * @param {string} [html] - Optional HTML body
+     * Send email
      */
     async sendEmail(to, subject, text, html) {
         if (!this.transporter) {
             return {
                 success: false,
-                error: 'Email service not configured. Set SMTP_* variables in backend .env',
+                error: 'Email service not configured (SMTP missing)',
             };
         }
 
@@ -82,7 +113,8 @@ class EmailService {
                 status: 'sent',
             };
         } catch (error) {
-            console.error(`   ❌ Email to ${to} failed:`, error.message);
+            console.error(`❌ Email failed to ${to}:`, error.message);
+
             return {
                 success: false,
                 error: error.message,

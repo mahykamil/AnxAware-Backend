@@ -1,41 +1,54 @@
-// Dialogflow Controller
-// This controller will handle Dialogflow integration for the chatbot
-// TODO: Install Dialogflow SDK: npm install @google-cloud/dialogflow
-
 /**
- * Process a user message through Dialogflow
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
+ * Dialogflow Controller
+ * Handles Dialogflow integration for AI chatbot with anxiety context awareness
+ * 
+ * Environment variables required:
+ * - DIALOGFLOW_PROJECT_ID
+ * - DIALOGFLOW_CLIENT_EMAIL
+ * - DIALOGFLOW_PRIVATE_KEY
  */
+
 const dialogflow = require('@google-cloud/dialogflow');
 const uuid = require('uuid');
-
-// Dialogflow Controller
 
 /**
  * Process a user message through Dialogflow with anxiety context
  */
 exports.processMessage = async (req, res) => {
   try {
-    const { message, userId, sessionId, anxietyLevel } = req.body;
+    const { message, sessionId, anxietyLevel } = req.body;
 
     if (!message) {
-      return res.status(400).json({ success: false, error: 'Message is required' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Message is required' 
+      });
     }
 
-    // Use provided sessionId or generate a new one (in a real app, persist this)
+    // Use provided sessionId or generate a new one
     const currentSessionId = sessionId || uuid.v4();
 
     // Configuration from environment variables
     const projectId = process.env.DIALOGFLOW_PROJECT_ID;
     const clientEmail = process.env.DIALOGFLOW_CLIENT_EMAIL;
-    const privateKey = process.env.DIALOGFLOW_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const privateKey = process.env.DIALOGFLOW_PRIVATE_KEY
+      ? process.env.DIALOGFLOW_PRIVATE_KEY.replace(/\\n/g, '\n')
+      : undefined;
 
+    // Check if Dialogflow is configured
     if (!projectId || !clientEmail || !privateKey) {
-      console.warn('Dialogflow credentials missing in .env');
-      return res.status(500).json({
-        success: false,
-        error: 'Dialogflow credentials missing in environment variables'
+      console.warn('⚠️  Dialogflow: Credentials missing in environment variables');
+      
+      // Return a fallback response instead of error
+      return res.json({
+        success: true,
+        data: {
+          reply: "I'm here to help! However, the AI chatbot isn't fully configured yet. Please reach out to support for assistance with your anxiety management.",
+          sessionId: currentSessionId,
+          intent: 'fallback',
+          confidence: 0,
+          isFallback: true
+        }
       });
     }
 
@@ -123,26 +136,49 @@ exports.processMessage = async (req, res) => {
  */
 exports.createSession = async (req, res) => {
   try {
-    const { userId } = req.body;
     const sessionId = uuid.v4();
 
     res.json({
       success: true,
       data: {
         sessionId: sessionId,
-        message: 'Session initiated'
+        message: 'Chat session created successfully'
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error creating session:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to create session',
+      message: error.message 
+    });
   }
 };
 
 /**
- * Get context (Placeholder)
+ * Health check for Dialogflow integration
  */
 exports.getContext = async (req, res) => {
-  // Not strictly needed for this integration phase
-  res.json({ success: true, message: 'Not implemented' });
+  try {
+    const projectId = process.env.DIALOGFLOW_PROJECT_ID;
+    const clientEmail = process.env.DIALOGFLOW_CLIENT_EMAIL;
+    const privateKey = process.env.DIALOGFLOW_PRIVATE_KEY;
+
+    const isConfigured = !!(projectId && clientEmail && privateKey);
+
+    res.json({ 
+      success: true, 
+      configured: isConfigured,
+      message: isConfigured 
+        ? 'Dialogflow is configured and ready' 
+        : 'Dialogflow credentials not configured'
+    });
+  } catch (error) {
+    console.error('Error checking Dialogflow context:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
 };
 

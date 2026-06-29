@@ -80,7 +80,6 @@ app.listen(PORT, '0.0.0.0', async () => {
   } catch (e) {
     console.error('❌ Email startup check error:', e.message);
   }
-  console.log("API URL USED:", process.env.EXPO_PUBLIC_API_URL);
 });
 
 module.exports = app;
